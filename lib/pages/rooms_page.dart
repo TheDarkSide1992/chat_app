@@ -1,3 +1,4 @@
+import 'package:chat_app/models/room.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chat_app/cubit/profiles/profiles_cubit.dart';
@@ -16,8 +17,7 @@ class RoomsPage extends StatelessWidget {
   static Route<void> route() {
     return MaterialPageRoute(
       builder: (context) => BlocProvider<RoomCubit>(
-        create: (context) =>
-        RoomCubit()..initializeRooms(context),
+        create: (context) => RoomCubit()..initializeRooms(context),
         child: const RoomsPage(),
       ),
     );
@@ -34,7 +34,7 @@ class RoomsPage extends StatelessWidget {
               await supabase.auth.signOut();
               Navigator.of(context).pushAndRemoveUntil(
                 RegisterPage.route(),
-                    (route) => false,
+                (route) => false,
               );
             },
             child: const Text('Logout'),
@@ -48,59 +48,11 @@ class RoomsPage extends StatelessWidget {
           } else if (state is RoomsLoaded) {
             final newUsers = state.newUsers;
             final rooms = state.rooms;
-            return BlocBuilder<ProfilesCubit,
-                ProfilesState>(
+            return BlocBuilder<ProfilesCubit, ProfilesState>(
               builder: (context, state) {
                 if (state is ProfilesLoaded) {
                   final profiles = state.profiles;
-                  return Column(
-                    children: [
-                      _NewUsers(newUsers: newUsers),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: rooms.length,
-                          itemBuilder: (context, index) {
-                            final room = rooms[index];
-                            final otherUser =
-                            profiles[room.otherUserId];
-
-                            return ListTile(
-                              onTap: () =>
-                                  Navigator.of(context)
-                                      .push(ChatPage.route(
-                                      room.id)),
-                              leading: CircleAvatar(
-                                child: otherUser == null
-                                    ? preloader
-                                    : Text(otherUser
-                                    .username
-                                    .substring(0, 2)),
-                              ),
-                              title: Text(otherUser == null
-                                  ? 'Loading...'
-                                  : otherUser.username),
-                              subtitle: room.lastMessage !=
-                                  null
-                                  ? Text(
-                                room.lastMessage!
-                                    .content,
-                                maxLines: 1,
-                                overflow: TextOverflow
-                                    .ellipsis,
-                              )
-                                  : const Text(
-                                  'Room created'),
-                              trailing: Text(format(
-                                  room.lastMessage
-                                      ?.createdAt ??
-                                      room.createdAt,
-                                  locale: 'en_short')),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  );
+                  return roomList(newUsers, rooms, profiles);
                 } else {
                   return preloader;
                 }
@@ -113,8 +65,7 @@ class RoomsPage extends StatelessWidget {
                 _NewUsers(newUsers: newUsers),
                 const Expanded(
                   child: Center(
-                    child: Text(
-                        'Start a chat by tapping on available users'),
+                    child: Text('Start a chat by tapping on available users'),
                   ),
                 ),
               ],
@@ -125,6 +76,47 @@ class RoomsPage extends StatelessWidget {
           throw UnimplementedError();
         },
       ),
+    );
+  }
+
+  Column roomList(List<Profile> newUsers, List<Room> rooms,
+      Map<String, Profile?> profiles) {
+    return Column(
+      children: [
+        _NewUsers(newUsers: newUsers),
+        Expanded(
+          child: ListView.builder(
+            itemCount: rooms.length,
+            itemBuilder: (context, index) {
+              final room = rooms[index];
+              final otherUser = profiles[room.otherUserId];
+
+              return roomLists(context, room, otherUser);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  ListTile roomLists(BuildContext context, Room room, Profile? otherUser) {
+    return ListTile(
+      onTap: () => Navigator.of(context).push(ChatPage.route(room.id)),
+      leading: CircleAvatar(
+        child: otherUser == null
+            ? preloader
+            : Text(otherUser.username.substring(0, 2)),
+      ),
+      title: Text(otherUser == null ? 'Loading...' : otherUser.username),
+      subtitle: room.lastMessage != null
+          ? Text(
+              room.lastMessage!.content,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : const Text('Room created'),
+      trailing: Text(format(room.lastMessage?.createdAt ?? room.createdAt,
+          locale: 'en_short')),
     );
   }
 }
@@ -142,46 +134,69 @@ class _NewUsers extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       scrollDirection: Axis.horizontal,
-      child: Row(
-        children: newUsers
-            .map<Widget>((user) => InkWell(
-          onTap: () async {
-            try {
-              final roomId =
-              await BlocProvider.of<RoomCubit>(
-                  context)
-                  .createRoom(user.id);
-              Navigator.of(context)
-                  .push(ChatPage.route(roomId));
-            } catch (_) {
-              context.showErrorSnackBar(
-                  message:
-                  'Failed creating a new room');
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SizedBox(
-              width: 60,
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    child: Text(user.username
-                        .substring(0, 2)),
+      child: room(newUsers: newUsers),
+    );
+  }
+}
+
+class room extends StatelessWidget {
+  const room({
+    super.key,
+    required this.newUsers,
+  });
+
+  final List<Profile> newUsers;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: newUsers
+          .map<Widget>((user) => InkWell(
+                onTap: () async {
+                  try {
+                    final roomId = await BlocProvider.of<RoomCubit>(context)
+                        .createRoom(user.id);
+                    Navigator.of(context).push(ChatPage.route(roomId));
+                  } catch (_) {
+                    context.showErrorSnackBar(
+                        message: 'Failed creating a new room');
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    width: 60,
+                    child: perofile(user.username),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    user.username,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ))
-            .toList(),
-      ),
+                ),
+              ))
+          .toList(),
+    );
+  }
+}
+
+class perofile extends StatelessWidget {
+  const perofile(
+    String username, {
+    super.key,
+  });
+
+  get username => null;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        CircleAvatar(
+          child: Text(username.substring(0, 2)),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          username,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

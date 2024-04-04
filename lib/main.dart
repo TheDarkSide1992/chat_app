@@ -12,12 +12,10 @@ Future<void> main() async {
   await Supabase.initialize(
     // TODO: Replace credentials with your own
     //url: 'SUPABASE_URL',
-    url: secret.url,
     //anonKey: 'SUPABASE_ANON_KEY',
-    anonKey: secret.anonKey,
-    //authCallbackUrlHostname: 'login',
-    //authCallbackUrlHostname: secret.authCallbackUrlHostname, //TODO ERROR might not be usable
 
+    url: secret.url,
+    anonKey: secret.anonKey,
   );
   runApp(const MyApp());
 }

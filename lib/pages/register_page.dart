@@ -7,14 +7,11 @@ import 'package:chat_app/utils/constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage(
-      {Key? key, required this.isRegistering})
-      : super(key: key);
+  const RegisterPage({Key? key, required this.isRegistering}) : super(key: key);
 
   static Route<void> route({bool isRegistering = false}) {
     return MaterialPageRoute(
-      builder: (context) =>
-          RegisterPage(isRegistering: isRegistering),
+      builder: (context) => RegisterPage(isRegistering: isRegistering),
     );
   }
 
@@ -33,8 +30,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _usernameController = TextEditingController();
 
-  late final StreamSubscription<AuthState>
-  _authSubscription;
+  late final StreamSubscription<AuthState> _authSubscription;
 
   @override
   void initState() {
@@ -42,15 +38,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
     bool haveNavigated = false;
     // Listen to auth state to redirect user when the user clicks on confirmation link
-    _authSubscription =
-        supabase.auth.onAuthStateChange.listen((data) {
-          final session = data.session;
-          if (session != null && !haveNavigated) {
-            haveNavigated = true;
-            Navigator.of(context)
-                .pushReplacement(RoomsPage.route());
-          }
-        });
+    _authSubscription = supabase.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      if (session != null && !haveNavigated) {
+        haveNavigated = true;
+        Navigator.of(context).pushReplacement(RoomsPage.route());
+      }
+    });
   }
 
   @override
@@ -77,14 +71,12 @@ class _RegisterPageState extends State<RegisterPage> {
         emailRedirectTo: 'io.supabase.chat://login',
       );
       context.showSnackBar(
-          message:
-          'Please check your inbox for confirmation email.');
+          message: 'Please check your inbox for confirmation email.');
     } on AuthException catch (error) {
       context.showErrorSnackBar(message: error.message);
     } catch (error) {
       debugPrint(error.toString());
-      context.showErrorSnackBar(
-          message: unexpectedErrorMessage);
+      context.showErrorSnackBar(message: unexpectedErrorMessage);
     }
   }
 
@@ -99,55 +91,11 @@ class _RegisterPageState extends State<RegisterPage> {
         child: ListView(
           padding: formPadding,
           children: [
-            TextFormField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                label: Text('Email'),
-              ),
-              validator: (val) {
-                if (val == null || val.isEmpty) {
-                  return 'Required';
-                }
-                return null;
-              },
-              keyboardType: TextInputType.emailAddress,
-            ),
+            emailField(emailController: _emailController),
             spacer,
-            TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                label: Text('Password'),
-              ),
-              validator: (val) {
-                if (val == null || val.isEmpty) {
-                  return 'Required';
-                }
-                if (val.length < 6) {
-                  return '6 characters minimum';
-                }
-                return null;
-              },
-            ),
+            passwordField(passwordController: _passwordController),
             spacer,
-            TextFormField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                label: Text('Username'),
-              ),
-              validator: (val) {
-                if (val == null || val.isEmpty) {
-                  return 'Required';
-                }
-                final isValid =
-                RegExp(r'^[A-Za-z0-9_]{3,24}$')
-                    .hasMatch(val);
-                if (!isValid) {
-                  return '3-24 long with alphanumeric or underscore';
-                }
-                return null;
-              },
-            ),
+            userNameField(usernameController: _usernameController),
             spacer,
             ElevatedButton(
               onPressed: _isLoading ? null : _signUp,
@@ -156,14 +104,96 @@ class _RegisterPageState extends State<RegisterPage> {
             spacer,
             TextButton(
                 onPressed: () {
-                  Navigator.of(context)
-                      .push(LoginPage.route());
+                  Navigator.of(context).push(LoginPage.route());
                 },
-                child:
-                const Text('I already have an account'))
+                child: const Text('I already have an account'))
           ],
         ),
       ),
+    );
+  }
+}
+
+class userNameField extends StatelessWidget {
+  const userNameField({
+    super.key,
+    required TextEditingController usernameController,
+  }) : _usernameController = usernameController;
+
+  final TextEditingController _usernameController;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _usernameController,
+      decoration: const InputDecoration(
+        label: Text('Username'),
+      ),
+      validator: (val) {
+        if (val == null || val.isEmpty) {
+          return 'Required';
+        }
+        final isValid = RegExp(r'^[A-Za-z0-9_]{3,24}$').hasMatch(val);
+        if (!isValid) {
+          return '3-24 long with alphanumeric or underscore';
+        }
+        return null;
+      },
+    );
+  }
+}
+
+class passwordField extends StatelessWidget {
+  const passwordField({
+    super.key,
+    required TextEditingController passwordController,
+  }) : _passwordController = passwordController;
+
+  final TextEditingController _passwordController;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: true,
+      decoration: const InputDecoration(
+        label: Text('Password'),
+      ),
+      validator: (val) {
+        if (val == null || val.isEmpty) {
+          return 'Required';
+        }
+        if (val.length < 6) {
+          return '6 characters minimum';
+        }
+        return null;
+      },
+    );
+  }
+}
+
+class emailField extends StatelessWidget {
+  const emailField({
+    super.key,
+    required TextEditingController emailController,
+  }) : _emailController = emailController;
+
+  final TextEditingController _emailController;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _emailController,
+      decoration: const InputDecoration(
+        label: Text('Email'),
+      ),
+      validator: (val) {
+        if (val == null || val.isEmpty) {
+          return 'Required';
+        }
+        return null;
+      },
+      keyboardType: TextInputType.emailAddress,
     );
   }
 }

@@ -37,39 +37,64 @@ class ChatPage extends StatelessWidget {
             return preloader;
           } else if (state is ChatLoaded) {
             final messages = state.messages;
-            return Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    reverse: true,
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      return _ChatBubble(message: message);
-                    },
-                  ),
-                ),
-                const _MessageBar(),
-              ],
-            );
+            return displayLoadedChat(messages: messages);
           } else if (state is ChatEmpty) {
-            return Column(
-              children: const [
-                Expanded(
-                  child: Center(
-                    child: Text('Start your conversation now :)'),
-                  ),
-                ),
-                _MessageBar(),
-              ],
-            );
+            return displayEmptyChat();
           } else if (state is ChatError) {
             return Center(child: Text(state.message));
           }
           throw UnimplementedError();
         },
       ),
+    );
+  }
+}
+
+class displayEmptyChat extends StatelessWidget {
+  const displayEmptyChat({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: const [
+        Expanded(
+          child: Center(
+            child: Text('Start your conversation now :)'),
+          ),
+        ),
+        _MessageBar(),
+      ],
+    );
+  }
+}
+
+class displayLoadedChat extends StatelessWidget {
+  const displayLoadedChat({
+    super.key,
+    required this.messages,
+  });
+
+  final List<Message> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            reverse: true,
+            itemCount: messages.length,
+            itemBuilder: (context, index) {
+              final message = messages[index];
+              return _ChatBubble(message: message);
+            },
+          ),
+        ),
+        const _MessageBar(),
+      ],
     );
   }
 }
@@ -160,19 +185,7 @@ class _ChatBubble extends StatelessWidget {
       if (!message.isMine) UserAvatar(userId: message.profileId),
       const SizedBox(width: 12),
       Flexible(
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            vertical: 8,
-            horizontal: 12,
-          ),
-          decoration: BoxDecoration(
-            color: message.isMine
-                ? Colors.grey[300]
-                : Theme.of(context).primaryColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(message.content),
-        ),
+        child: notUserChatBouble(message: message),
       ),
       const SizedBox(width: 12),
       Text(format(message.createdAt, locale: 'en_short')),
@@ -185,9 +198,35 @@ class _ChatBubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
       child: Row(
         mainAxisAlignment:
-        message.isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+            message.isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: chatContents,
       ),
+    );
+  }
+}
+
+class notUserChatBouble extends StatelessWidget {
+  const notUserChatBouble({
+    super.key,
+    required this.message,
+  });
+
+  final Message message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: 8,
+        horizontal: 12,
+      ),
+      decoration: BoxDecoration(
+        color: message.isMine
+            ? Colors.grey[300]
+            : Theme.of(context).primaryColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(message.content),
     );
   }
 }
